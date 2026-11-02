@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """
 KINORA server (Termux).
@@ -29,7 +30,7 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_dir)
 
 # ====== SOZLAMALAR ======
-PORT = 8080
+PORT = int(os.environ.get("PORT", 8080))
 WEB = "web"                 # mini app fayllari (index.html) shu papkada
 CATALOG = "catalog.json"
 RAW = "raw_cache.json"       # Telegram papkalari ro'yxati (10 daqiqalik ish bir marta)
