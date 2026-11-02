@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Cinema</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #121212; --card: #1e1e1e; --txt: #fff; --acc: #ff9800; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: var(--bg); color: var(--txt); padding-bottom: 50px; }
+        .hero { position: relative; width: 100%; height: 300px; background: url('https://image.tmdb.org/t/p/w500/fC2HDm5t0kHl7mTm7jxMR31b7by.jpg') center/cover; }
+        .overlay { position: absolute; bottom: 0; width: 100%; height: 100%; background: linear-gradient(to top, var(--bg) 0%, transparent 100%); }
+        .content { position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 2; }
+        .content h1 { font-size: 22px; margin-bottom: 5px; }
+        .content p { font-size: 12px; color: #aaa; }
+        .edit-btn { position: absolute; top: 20px; right: 20px; background: var(--acc); border: none; color: white; padding: 8px 12px; border-radius: 8px; display: none; z-index: 10; }
+        .seasons { padding: 20px; }
+        .season { margin-bottom: 15px; background: var(--card); border-radius: 12px; overflow: hidden; }
+        .season-header { padding: 15px; display: flex; justify-content: space-between; font-weight: bold; cursor: pointer; border-bottom: 1px solid #333; }
+        .season-content { display: none; padding: 15px; overflow-x: auto; white-space: nowrap; }
+        .season-content::-webkit-scrollbar { display: none; }
+        .season.active .season-content { display: block; }
+        .season.active .icon { transform: rotate(180deg); }
+        .icon { transition: 0.3s; }
+        .episodes { display: flex; gap: 15px; }
+        .ep-card { min-width: 140px; width: 140px; background: #2a2a2a; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; }
+        .ep-img { width: 100%; height: 80px; object-fit: cover; }
+        .ep-info { padding: 8px; }
+        .ep-info h4 { font-size: 12px; margin-bottom: 3px; white-space: normal; }
+        .ep-info p { font-size: 11px; color: #888; }
+        .progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--acc); }
+        .modal { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 20px 20px 0 0; z-index: 100; }
+        .modal.active { display: block; }
+        .modal input, .modal textarea { width: 100%; padding: 10px; margin-bottom: 10px; background: #333; border: none; color: white; border-radius: 8px; }
+        .modal button { width: 100%; padding: 12px; background: var(--acc); color: white; border: none; border-radius: 8px; font-weight: bold; }
+        #player { display: none; position: fixed; inset: 0; background: black; z-index: 200; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .close { position: absolute; top: 20px; right: 20px; font-size: 24px; color: white; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="overlay"></div>
+        <button class="edit-btn" id="adminBtn" onclick="openModal()">✏️ Tahrirlash</button>
+        <div class="content">
+            <h1 id="title">Better Call Saul</h1>
+            <p id="desc">Aqlli huquqshunosning afsonaviy advokatga aylanish yo'li haqida hikoya...</p>
+        </div>
+    </div>
+    <div class="seasons" id="seasonsBox"></div>
+
+    <div class="modal" id="editModal">
+        <input type="text" id="inTitle" placeholder="Nomi">
+        <textarea id="inDesc" rows="2" placeholder="Tavsif"></textarea>
+        <input type="file" id="inImg" accept="image/*" style="background:none;">
+        <button onclick="saveData()">Saqlash</button>
+        <button onclick="closeModal()" style="background:#444; margin-top:5px;">Yopish</button>
+    </div>
+
+    <div id="player">
+        <div class="close" onclick="closePlayer()">✕</div>
+        <h2>Video yuklanmoqda...</h2>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp; tg.expand();
+        const ADMIN_ID = "7019043381"; 
+        let userId = tg.initDataUnsafe?.user?.id || "demo";
+        
+        if(userId == ADMIN_ID) document.getElementById('adminBtn').style.display = 'block';
+
+        let data = {
+            title: "Better Call Saul", desc: "Aqlli huquqshunosning afsonaviy advokatga aylanish yo'li haqida hikoya...",
+            seasons: [
+                { id: 1, eps: [{ id: 1, n: "Uno", d: "53 daq", p: 100, i: "https://image.tmdb.org/t/p/w300/fC2HDm5t0kHl7mTm7jxMR31b7by.jpg" }, { id: 2, n: "Mijo", d: "46 daq", p: 50, i: "https://image.tmdb.org/t/p/w300/fC2HDm5t0kHl7mTm7jxMR31b7by.jpg" }] },
+                { id: 2, eps: [{ id: 1, n: "Switch", d: "49 daq", p: 0, i: "https://image.tmdb.org/t/p/w300/fC2HDm5t0kHl7mTm7jxMR31b7by.jpg" }] }
+            ]
+        };
+
+        let lastW = JSON.parse(localStorage.getItem(`last_${userId}`)) || { s: 1, e: 1 };
+
+        function draw() {
+            let box = document.getElementById('seasonsBox'); box.innerHTML = '';
+            data.seasons.forEach(s => {
+                let active = s.id === lastW.s ? 'active' : '';
+                let epsHtml = s.eps.map(e => `
+                    <div class="ep-card" onclick="play(${s.id}, ${e.id})">
+                        <img src="${e.i}" class="ep-img">
+                        <div class="ep-info"><h4>${e.id}-qism. ${e.n}</h4><p>${e.d}</p></div>
+                        <div class="progress" style="width:${e.p}%"></div>
+                    </div>`).join('');
+                box.innerHTML += `
+                    <div class="season ${active}" id="s-${s.id}">
+                        <div class="season-header" onclick="toggle(${s.id})"><span>${s.id}-fasl</span><span class="icon">▼</span></div>
+                        <div class="season-content"><div class="episodes">${epsHtml}</div></div>
+                    </div>`;
+            });
+        }
+
+        function toggle(id) {
+            let el = document.getElementById(`s-${id}`);
+            let isAct = el.classList.contains('active');
+            document.querySelectorAll('.season').forEach(s => s.classList.remove('active'));
+            if(!isAct) el.classList.add('active');
+        }
+
+        function play(sid, eid) {
+            document.getElementById('player').style.display = 'flex';
+            localStorage.setItem(`last_${userId}`, JSON.stringify({ s: sid, e: eid }));
+            draw();
+        }
+        function closePlayer() { document.getElementById('player').style.display = 'none'; }
+
+        function openModal() {
+            document.getElementById('inTitle').value = data.title;
+            document.getElementById('inDesc').value = data.desc;
+            document.getElementById('editModal').classList.add('active');
+        }
+        function closeModal() { document.getElementById('editModal').classList.remove('active'); }
+        function saveData() {
+            data.title = document.getElementById('inTitle').value;
+            data.desc = document.getElementById('inDesc').value;
+            document.getElementById('title').innerText = data.title;
+            document.getElementById('desc').innerText = data.desc;
+            let f = document.getElementById('inImg');
+            if(f.files[0]) {
+                let r = new FileReader();
+                r.onload = e => document.querySelector('.hero').style.backgroundImage = `url(${e.target.result})`;
+                r.readAsDataURL(f.files[0]);
+            }
+            closeModal();
+        }
+        draw();
+    </script>
+</body>
+</html>
