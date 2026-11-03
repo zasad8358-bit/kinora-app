@@ -44,11 +44,6 @@ SESSION = "kino_session"
 CHUNK = 512 * 1024          # Telegram yuklash bo'lagi (1 MB ga bo'linishi shart)
 # ========================
 
-# API_ID, API_HASH, NEW_TITLE eski.py dan olinadi (kino7.py dagidek)
-with open("eski.py", encoding="utf-8") as f:
-    _src = f.read()
-
-
 def _get(name):
     m = re.search(rf"^{name} = (.+?)\s*(#.*)?$", _src, re.M)
     return ast.literal_eval(m.group(1))
