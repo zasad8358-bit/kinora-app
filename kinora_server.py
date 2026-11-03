@@ -90,9 +90,12 @@ def save_edit(movie_id, fields):
             data = json.load(f)
         for m in data:
             if m.get("id") == movie_id:
-                for k in ("title", "description"):
+                for k in ("title", "description", "poster"):
                     if k in fields:
-                        m[k] = str(fields[k])[:4000]
+                        v = str(fields[k]).strip()[:4000]
+                        if k == "poster" and v and not v.startswith("https://"):
+                            continue
+                        m[k] = v
                 break
         else:
             return False
