@@ -3,8 +3,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from telethon import TelegramClient, events, utils
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import GetChannelsRequest
-from telethon.tl.types import (InputChannel, KeyboardButtonRow,
-                               KeyboardButtonWebView, ReplyInlineMarkup)
+from telethon import Button
+from telethon.tl.types import InputChannel
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 PORT = int(os.environ.get("PORT", 8080))
@@ -57,8 +57,7 @@ def run(coro, timeout=90):
 @client.on(events.NewMessage(pattern=r"^/start", func=lambda e: e.is_private))
 async def on_start(event):
     if WEBAPP_URL:
-        kb = ReplyInlineMarkup([KeyboardButtonRow([KeyboardButtonWebView("🎬 Kinolarni ochish", WEBAPP_URL)])])
-        await event.respond("KINORA ga xush kelibsiz!", buttons=kb)
+        await event.respond("KINORA ga xush kelibsiz!", buttons=[Button.url("🎬 Kinolarni ochish", WEBAPP_URL)])
     else:
         await event.respond("KINORA ishlayapti. (WEBAPP_URL sozlanmagan)")
 
