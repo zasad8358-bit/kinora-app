@@ -193,6 +193,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, b"video yo'q", "text/plain; charset=utf-8")
         size = m.document.size
         mime = m.document.mime_type or "video/mp4"
+        if "matroska" in mime:
+            mime = "video/mp4"
         start, end, partial = parse_range(self.headers.get("Range"), size)
         length = end - start + 1
         self.send_response(206 if partial else 200)
