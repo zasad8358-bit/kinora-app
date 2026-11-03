@@ -44,14 +44,9 @@ SESSION = "kino_session"
 CHUNK = 512 * 1024          # Telegram yuklash bo'lagi (1 MB ga bo'linishi shart)
 # ========================
 
-def _get(name):
-    m = re.search(rf"^{name} = (.+?)\s*(#.*)?$", _src, re.M)
-    return ast.literal_eval(m.group(1))
-
-
-API_ID = _get("API_ID")
-API_HASH = _get("API_HASH")
-NEW_TITLE = _get("NEW_TITLE")
+API_ID = int(os.environ.get("API_ID", 0))
+API_HASH = os.environ.get("API_HASH", "")
+NEW_TITLE = os.environ.get("NEW_TITLE", "")
 
 
 def _tmdb_key():
