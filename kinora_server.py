@@ -40,7 +40,7 @@ OVERRIDES = {}
 VER = "3"
 WORKERS = 10                # TMDB so'rovlari bir vaqtda nechta
 PROGRESS = "progress.json"
-SESSION = "kino_session"
+SESSION = ":memory:"
 CHUNK = 512 * 1024          # Telegram yuklash bo'lagi (1 MB ga bo'linishi shart)
 # ========================
 
@@ -365,7 +365,7 @@ async def build():
     if not fresh and os.path.exists(CACHE):
         cache = json.load(open(CACHE, encoding="utf-8"))
 
-    await client.start()
+    await client.start(bot_token=os.environ.get("BOT_TOKEN"))
     new = await find_chat(NEW_TITLE)
     prog = json.load(open(PROGRESS, encoding="utf-8"))
     os.makedirs(os.path.join(WEB, "posters"), exist_ok=True)
@@ -564,7 +564,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def serve():
     global NEW
-    client.start()   # Telethon o'zi sinxron ishlaydi
+    client.start(bot_token=os.environ.get("BOT_TOKEN"))   # Telethon o'zi sinxron ishlaydi
     NEW = client.loop.run_until_complete(find_chat(NEW_TITLE))
     threading.Thread(target=client.loop.run_forever, daemon=True).start()
     os.makedirs(WEB, exist_ok=True)
