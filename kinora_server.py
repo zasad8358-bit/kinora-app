@@ -1,3 +1,4 @@
+import threading
 import os
 #!/usr/bin/env python3
 """
@@ -579,7 +580,7 @@ def serve():
     os.makedirs(WEB, exist_ok=True)
     print(f"Server tayyor: http://localhost:{PORT}")
     print("Telegram uchun boshqa oynada:  cloudflared tunnel --url http://localhost:%d" % PORT)
-    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    threading.Thread(target=lambda: ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever(), daemon=True).start()
 
 
 if __name__ == "__main__":
